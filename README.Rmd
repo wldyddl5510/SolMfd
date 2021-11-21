@@ -1,0 +1,18 @@
+---
+output:
+  pdf_document: default
+  github_document: default
+knit: (function(inputFile, encoding) {
+  rmarkdown::render("README.rmd", encoding = encoding,
+  output_format = "all") })
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# SolMfd: Algorithms for a solution manifold
+
+## Introduction
+
+Solution manifold is a mathematical concept that can be applied to various statistical applications, such as constrainted likelihood optimization. This package implemented functions that find solution manifolds, solving constrainted likelihood problems in solution manifold, and fitting prior distribution in solution manifold. 
