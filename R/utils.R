@@ -3,6 +3,7 @@ require(mvtnorm)
 
 # for given phi and lambda, construct positive definite function
 # @params: phi: target function, d: input dim, s: otput dim, Lambda: pd matrix
+# @return: f: quadratic form for given phi and Lambda
 pd_function = function(phi, d, s, Lambda = NULL) {
   # compatibility check
   if(is.null(Lambda)) {

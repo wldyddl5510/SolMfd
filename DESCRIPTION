@@ -3,8 +3,10 @@ Title: Implementations of solution manifold algorithms
 Version: 0.0.0.9000
 Authors@R: 
     person("Jiyoung", "Park", , "wldyddl5510@tamu.edu", role = c("aut", "cre"))
-Description: Solution manifold can generalize various statistical methodologies. This package aims to implement algorithms regarding a solution manifold. This includes finding a solution manifold, as well as statistical applications of solution manifolds.
-    license
+Description: Solution manifold can generalize various statistical methodologies. 
+    This package aims to implement algorithms regarding a solution manifold. 
+    This includes finding a solution manifold, as well as statistical applications of solution manifolds.
+    To be specific, this package consists of sampling from solution manifold, assigning density to solution manifold, and solving constraint likelihood problem which utilizes solution manifold algorithms.
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
