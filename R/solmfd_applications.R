@@ -1,10 +1,15 @@
-source("utils.r")
-
-# solving constraint likelihood function for the solution manifold.
-# @params: X: data, L: likelihood, C: constraint, Theta: parameter space, iter: num of iteration
-# @params: alpha: update rate of likelihood, gamma: update of manifold
-# @params: d, s: input-output
-# @return: theta: maximal likelihood parameter under constraint
+#' solving constraint likelihood function for the solution manifold.
+#' @param X mat: data matrix
+#' @param L function: likelihood
+#' @param C function: constraint function
+#' @param Theta
+#' @param iter int: number of maximum iteration
+#' @param tol: double: convergence threshold
+#'
+#' @return theta: list of parameters of interests that maximize the likelihood under constraint
+#' @export
+#' @examples
+#'
 const_likelihood = function(X, L, C, d, s, Theta, alpha, iter = 100, tol = 1e-07) {
   # TODO: solve constraint likelihood on solution manifold
   for(i in 1:iter) {
@@ -16,4 +21,5 @@ const_likelihood = function(X, L, C, d, s, Theta, alpha, iter = 100, tol = 1e-07
       theta = theta - gamma * grad(f)
     }
   }
+  return(theta)
 }
