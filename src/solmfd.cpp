@@ -11,31 +11,21 @@ arma::colvec solmfd_descent(arma::colvec& x, const arma::colvec& (*f)(arma::colv
   // iterate until converge
   while(f(x) > tol) {
     // TODO: Implement gradient descent, especially consider gradient calculation.
-    x += -(gamma * grad(f)(x))
+    x += -(gamma * grad(f)(x));
   }
 }
 
 /*
- * @params: x - init vector, f - quadratic form
+ * @params: x - init vector, f - quadratic form, h: normalizer
  */
 // [[Rcpp::export]]
 arma::colvec density_cpp(const arma::mat& points, const arma::colvec& (*h)(double)) {
   // iterate
-  N = n_row(points)
-  d = n_col(points)
+  N = n_row(points);
+  d = n_col(points);
   for(int i = 0; i < N ; i++) {
     for(int j = 0 ; j < d ; j++) {
       // TODO: Implement this inner part
     }
   }
 }
-
-
-// You can include R code blocks in C++ files processed with sourceCpp
-// (useful for testing and development). The R code will be automatically
-// run after the compilation.
-//
-
-/*** R
-# timesTwo(42)
-*/

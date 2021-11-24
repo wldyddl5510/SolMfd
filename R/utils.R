@@ -39,5 +39,6 @@ dist_sampling = function(N, d, distribution = "uniform", ...) {
 
 # performing gradient descent and func convergence point in this function with this init.
 grad_descent = function(f, init, gamma, tol) {
-  # TODO: Implement gradient descent for given function f
+  # TODO: Implement gradient descent for given function
+  grad_descent_cpp(f, init, gamma, tol)
 }
