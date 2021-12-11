@@ -1,44 +1,25 @@
-require(matrixcalc)
-require(mvtnorm)
-
-# for given phi and lambda, construct positive definite function
-# @params: phi: target function, d: input dim, s: otput dim, Lambda: pd matrix
-# @return: f: quadratic form for given phi and Lambda
-pd_function = function(phi, d, s, Lambda = NULL) {
-  # compatibility check
-  if(is.null(Lambda)) {
-    Lambda = diag(s)
-  } else {
-    if(nrow(Lambda) != s || ncol(Lambda) != s) {
-      stop("Incorrect dimension for Lambda. Lambda must be s x s dim matrix")
-    }
-    if(!is.positive.definite(Lambda)) {
-      stop("Lambda must be positive definite matrix")
-    }
-  }
-  f = function(x) {
+pd_function = function(phi, Lambda) {
+  quadratic_f = function(x) {
     return(crossprod(phi(x), Lambda %*% phi(x)))
   }
-  return(f)
+  return(quadratic_f)
 }
 
-# Sampling from various distributions
-# @params: N: num of samples, d; dim of space, distribution: sampling dist
-# @return: X:matrix[N, d]
-dist_sampling = function(N, d, distribution = "uniform", ...) {
-  x = switch(distribution,
-         uniform = {
-           x = runif(N * d, ...)
-           matrix(x, nrow = N, ncol = d)
-         },
-         gaussian = mvtnorm::rmvnorm(N, ...),
-         stop("Not implemented yet.")
-      )
-  return(x)
+grad_of_quadratic_f = function(phi, Lambda) {
+  grad_f = function(x) {
+    return(crossprod(2 * phi(x), Lambda %*% rootSolve::gradient(phi, x)))
+  }
+  return(grad_f)
 }
 
-# performing gradient descent and func convergence point in this function with this init.
-grad_descent = function(f, init, gamma, tol) {
-  # TODO: Implement gradient descent for given function
-  grad_descent_cpp(f, init, gamma, tol)
+grad_of_f = function(f) {
+  grad_f = function(x) {
+    return(rootSolve::gradient(f, x))
+  }
+  return(grad_f)
+}
+
+between_row_dist = function(X, M) {
+  mat_dist = outer(rowSums(X), rowSums(M^2), '+') - tcrossprod(X, 2 * M)
+  return(mat_dist)
 }
