@@ -7,7 +7,8 @@
 #' @param s int: output dimension
 #' @param gamma double: parameter of gradient descent step size
 #' @param Lambda mat[s, s]: p.d. function. Identity by default
-#' @param tol double: convergence threshold
+#' @param tol1 double: convergence threshold for manifold convergence
+#' @param tol2 double: convergence threhold for gradient descent algorithm. Should be smaller than tol1
 #' @param num_iter int: if algorithm does not converge, it iterates for num_iter times.
 #' @param ... additional parameter for prior distribution if needed. If not provided, each distribution has its default
 #'
@@ -16,13 +17,13 @@
 #'
 #' @examples
 #' N = 10
-#' phi = function(mu, sd) {return(pnorm(2, mu, sd) - pnorm(-5, mu, sd) - 0.5)}
+#' phi = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], x[[2]]) - 0.5)}
 #' d = 2
 #' s = 1
-#' res_points = sol_mfd_points(N, phi, d, s, mu = c(2, 2.5), sigma = 0.2 * diag(2))
+#' res_points = sol_mfd_points(N, phi, d, s, prior = "uniform")
 #' head(res_points)
 #' phi(res_points[1, ]) # are they on solution manifold?
-sol_mfd_points = function(N, phi, d, s, prior = "gaussian", gamma = 0.1, Lambda = NULL, tol = 1e-07, num_iter = 1000, ...) {
+sol_mfd_points = function(N, phi, d, s, prior = "gaussian", gamma = 0.005, Lambda = NULL, tol1 = 1e-07, tol2 = 1e-15, num_iter = 100000, ...) {
   # construct positive definite function
   # compatibility check
   if(is.null(Lambda)) {
@@ -31,72 +32,104 @@ sol_mfd_points = function(N, phi, d, s, prior = "gaussian", gamma = 0.1, Lambda 
     if(nrow(Lambda) != s || ncol(Lambda) != s) {
       stop("Incorrect dimension for Lambda. Lambda must be s x s dim matrix")
     }
-    if(!matrixCalc:: is.positive.definite(Lambda)) {
+    if(!matrixcalc::is.positive.definite(Lambda)) {
       stop("Lambda must be positive definite matrix")
     }
   }
+  # result saving matrix
   final_points = matrix(0, nrow = N, ncol = d)
   iter = 0
-  params = list(...)
+  # quadratic form and grad of this to run and evaluate algorithm
   quadratic_f = pd_function(phi, Lambda)
   grad_f = grad_of_quadratic_f(phi, Lambda)
-  if(prior == "gaussian") {
-    # set mu
-    if(exists('mu', params)) {
-      mu = params$mu
-      # compatibility check
-      if(length(mu) != d) {
-        stop("dimension of mu mismatches with d.")
-      }
-    } else{
-      print("No mu declaration. Set to default 0.")
-      mu = rep(0, d)
-    }
-    # set sigma
-    if(exists('sigma', params)) {
-      sigma = params$sigma
-      # compatibility check
-      if((nrow(sigma) != d) || (ncol(sigma) != d)) {
-        stop("dimension of sigma mismatches with d.")
-      }
-      if(!matrixCalc:: is.positive.definite(sigma)) {
-        stop("sigma must be positive definite.")
-      }
-    } else{
-      print("No sigma declaration. Set to default identity matrix.")
-      sigma = diag(d)
-    }
-    final_points = sol_mfd_grad_descent_mvn_cpp(N, d, quadratic_f, grad_f, gamma, tol, num_iter, mu, sigma)
-  } else if (prior == "uniform") {
-    # set lower
-    if(exists('min', params)) {
-      lower = params$min
-      if(!is.numeric(lower)) {
-        stop("min must be numeric.")
-      }
-    } else {
-      print("No min declaration. Set to default 0.")
-      lower = 0
-    }
-    # set upper
-    if(exists('max', params)) {
-      upper = params$upper
-      if(!is.numeric(upper)) {
-        stop("max must be numeric.")
-      }
-    } else {
-      print("No max declaration. Set to default 1")
-      upper = 1
-    }
-    # compatibility check
-    if(lower >= upper) {
-      stop("min must be smaller than max.")
-    }
-    final_points = sol_mfd_grad_descent_munif_cpp(N, d, quadratic_f, grad_f, gamma, tol, num_iter, lower, upper)
-  } else{
-    stop("Not implemented yet. Please use gaussian or uniform as a prior.")
-  }
+  # designate sampling function
+  sampling_function = sampling_from_dist(d, prior, ...)
+  final_points = sol_mfd_grad_descent(N, d, quadratic_f, grad_f, sampling_function, gamma, tol1, tol2, num_iter)
   return(final_points)
+}
+
+
+
+#' solving constraint likelihood function using the solution manifold.
+#'
+#' @param nll function: negative log-likelihood given data X
+#' @param C function: constraint function
+#' @param theta vector: initial parameter
+#' @param s int: output dim of function C
+#' @param alpha gradient descent step for nll update
+#' @param gamma gradient descent step for solution manifold algorithm
+#' @param Lambda positive definite matrix for solution manifold algorithm. Default is identity
+#' @param tol1 double: convergence threshold for manifold convergence
+#' @param tol2 double: convergence threhold for gradient descent algorithm. Should be smaller than tol1
+#' @param num_iter maximum number of iterations for gradient descent.
+#' @param num_iter2 number of iteration for all processes.
+#'
+#' @return theta_traj: matrix containing trajactory of theta updates.
+#' @export
+#'
+#' @examples
+#' # init value
+#' set.seed(10)
+#' # num of samples
+#' n = 100
+#' # data distribution
+#' X = rnorm(n, mean = 1.5, sd = 3)
+#' # negative log likelihood
+#' nll = function(theta) {return(-sum(dnorm(X, theta[[1]], theta[[2]], log = TRUE)))}
+#' # constraint
+#' C = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], x[[2]]) - 0.5)}
+#' theta = runif(2, 1, 3)
+#' theta_updated = constraint_likelihood(nll, C, theta, 1)
+#' # compare between init and end points.
+#' C(theta_updated[1, ])
+#' C(theta_updated[41, ])
+#' nll(theta_updated[1, ])
+#' nll(theta_updated[41, ])
+constraint_likelihood = function(nll, C, theta, s, alpha = 0.005, gamma = 0.005, Lambda = NULL, tol1 = 1e-07, tol2 = 1e-15, num_iter = 100000, num_iter2 = 20) {
+  d = length(theta)
+  # compatibility check
+  if(is.null(Lambda)) {
+    Lambda = diag(s)
+  } else {
+    if(nrow(Lambda) != s || ncol(Lambda) != s) {
+      stop("Incorrect dimension for Lambda. Lambda must be s x s dim matrix")
+    }
+    if(!matrixcalc::is.positive.definite(Lambda)) {
+      stop("Lambda must be positive definite matrix")
+    }
+  }
+  grad_nll = grad_of_f(nll)
+  quadratic_f = pd_function(C, Lambda)
+  grad_f = grad_of_quadratic_f(C, Lambda)
+  grad_c = grad_of_f(C)
+  theta_traj = matrix(NA, 2 * num_iter2 + 1, d)
+  theta_traj[1, ] = theta
+  # likelihood update
+  for(i in 1:num_iter2) {
+    # gradient descent to negative log likelihood (i.e. gradient ascending to log-likelihood.)
+    # only one step
+    theta = theta - alpha * grad_nll(theta)
+    theta_traj[2 * i, ] = theta
+    # descent to manifold, until it reaches manifold.
+    theta = grad_descent(theta, grad_f, d, gamma, tol2, num_iter)
+    if(quadratic_f(theta) > tol1) {
+      stop("this theta does not converge to manifold. pick different theta.")
+    }
+    theta_traj[2 * i + 1, ] = theta
+    # stopping criterion: grad_nll(theta) \in span(row(grad_C))
+    # grad_nll \in row_grad_c
+    grad_c_mat = grad_c(theta)
+    # check grad_nll can be approximated by linear projection of rows of grad_c
+    linear_projection = crossprod(grad_c_mat, solve(tcrossprod(grad_c_mat, grad_c_mat)) %*% grad_c_mat)
+    target = grad_nll(theta)
+    row_space_error = sum((target %*% linear_projection - target)^2)
+    # error < tol1
+    if (row_space_error < tol2) {
+      break
+    }
+  }
+  # return with removing NA's
+  return(theta_traj[!rowSums(!is.finite(theta_traj)),])
 }
 
 #' solution manifold points sampling with Posterior density
@@ -108,28 +141,32 @@ sol_mfd_points = function(N, phi, d, s, prior = "gaussian", gamma = 0.1, Lambda 
 #' @param d int: input dimension
 #' @param s int: output dimension
 #' @param k function: kernel function
+#' @param h double: normalizing constant. used in kernel. default = 1
 #' @param prior str: type of prior distribution. Extra argument ... will be passed to a distribution parameter
 #' @param gamma double: parameter of gradient descent step size
 #' @param Lambda positive definite function. Default identity
-#' @param tol tolerance
+#' @param tol1 double: convergence threshold for manifold convergence
+#' @param tol2 double: convergence threhold for gradient descent algorithm. Should be smaller than tol1
 #' @param num_iter number of maximum iteration
 #' @param ... parameters of prior
 #'
 #' @return final_points: mat[N, d + 1]: N number of points in R^d+1, which are (R^d dim vector = points in solution manifold, density)
 #' @export
+#'
 #' @examples
-#' k = function(x) {return(dnorm(x / 2))}
+#' k = get("dnorm", mode = 'function')
 #' N = 10
-#' phi = function(mu, sd) {return(pnorm(2, mu, sd) - pnorm(-5, mu, sd) - 0.5)}
+#' phi = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], ) - 0.5)}
 #' d = 2
 #' s = 1
-#' prob_density = function(x, theta) {return(dnorm(x, mean = theta[1], sd = theta[2]))}
+#' prob_density = function(x, theta) {return(dnorm(x, mean = theta[[1]], sd = theta[[2]]))}
 #' n = 100
+#' set.seed(1)
 #' X = rnorm(n, 1.5, 3)
-#' post_density_solmfd(X, prob_density, N, phi, d, s, k, mu = c(2, 2.5), sigma = 0.2 * diag(2))
-post_density_solmfd = function(X, prob_density, N, phi, d, s, k, h = 1, prior = "gaussian", gamma = 0.1, Lambda = NULL, tol = 1e-07, num_iter = 1000, ...) {
+#' post_density_solmfd(X, prob_density, N, phi, d, s, k, prior = "uniform")
+post_density_solmfd = function(X, prob_density, N, phi, d, s, k, h = 1, prior = "gaussian", gamma = 0.01, Lambda = NULL, tol1 = 1e-07, tol2 = 1e-15, num_iter = 100000, ...) {
   # obtain points
-  points = sol_mfd_points(N, phi, d, prior, s, gamma, Lambda, tol, num_iter, ...)
+  points = sol_mfd_points(N, phi, d, prior, s, gamma, Lambda, tol1, tol2, num_iter, ...)
   # kernel
   dist_between_row = between_row_dist(points, points)
   normalized = dist_between_row / h
@@ -137,36 +174,14 @@ post_density_solmfd = function(X, prob_density, N, phi, d, s, k, h = 1, prior = 
   # mean by N
   rho_i = rowMeans(kerneled)
   # calculate the \hat(pi_i) = \pi(Z_i) \prod(p(X_j | Z+i))
-  params = list(...)
-  if(prior == "gaussian") {
-    if(exists('mu', params)) {
-      mu = params$mu
-    } else {
-      mu = rep(0, d)
-    }
-    if(exists('sigma', params)) {
-      sigma = params$sigma
-    } else {
-      sigma = diag(d)
-    }
-    pi_z = mvtnorm::dmvnorm(points, mu, sigma)
-  } else if(prior == "uniform") {
-    if(exists('min', params)) {
-      lower = params$min
-    } else {
-      lower = 0
-    }
-    if(exists("max", params)) {
-      upper = params$max
-    } else {
-      upper = 1
-    }
-    pi_z = dunif(points, lower, upper)
-  }
+  # calculate pi_i
+  # prior setting
+  # designate sampling function
+  density_function = density_from_dist(d, prior, ...)
+  pi_z = density_from_dist(points)
   # conditioning X ftn for vectoization
   z_conditioning_x = function(z) { return(prob_density(X, z)) }
-  apply(points, 1, z_conditioning_x)
-  pi_i = exp(log(pi_z) + colSum(log(apply(points, 1, z_conditioning_x))))
+  pi_i = exp(log(pi_z) + colSums(log(apply(points, 1, z_conditioning_x))))
   omega_i = pi_i / rho_i
   return(cbind(points, omega_i))
 }
