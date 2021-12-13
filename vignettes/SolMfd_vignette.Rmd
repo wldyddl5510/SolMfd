@@ -28,14 +28,45 @@ Solution manifold algorithm is an algorithm to find the solution of a given func
 
 This package aims to implement solution manifold based algorithms suggested on [Yen-Chi Chen, 2020][1]. There are three algorithms suggested. First algorithm is to find point clouds on the solution manifold, second algorithm is to solve constraint likelihood estimation, and the last is to calculate the posterior densities of points in solution manifold. Therefore, there are mainly three functions in this package, conducting each of them. I will go through each algorithm with examples throughout this vignettes. Lastly, I will mention some of guidelines to use this package, especially how to tuning the hyper parameters.
 
-Now, we will start with loading our library.
+Now, we start exploring the package. We will start with loading our library.
 
 ```{r setup}
 library(SolMfd)
 ```
 
+## Toy problem
+
+Throughout this vignettes, I will use a toy problem for those algorithms. This toy problem is finding parameters on given constraint. Suppose we have a Normal distribution $X \sim N(\mu, \sigma^2)$. And we have constraint as the following: $P(-5 < X < 2) = \frac{1}{2}$. Without constraint, the parameter space will be $\mathbb{R} \times \mathbb{R}^{+}$. However, it is intractable to solve how will be the parameter space under constraint. We will show how solution manifold algorithm can solve this problem.
+
 ### Algorithm 1: Finding point clouds on solution manifold algorithm.
 
-The first algorithm is most fundamental one. We sample 
+The first algorithm is most fundamental one. We sample point clouds on the solution manifold for given points and priors. 
+N stands for number of points we want to gather. Phi is a target function. d is a dimension of input, and s is a dimension of output. Those are required inputs for the algorithm.
+There are some hyperparameters on this algorithm. Prior is sampling distribution for initial starting points. we also allows additional argument for priors. gamma is a update parameter for gradient descent algorithm, smaller gamma enables fine tunning, but we need more number of iteration to converge. Lambda is a positive-definite matrix to form our objective function. tol1 and tol2 stands for tolerances rate. tol1 is used to verify whether the point is in manifold, and tol2 is convergence of gradient descent. We recommend tol1 > tol2. Lastly, num_iter is number of maximum possible iterations. 
+Now, we see how the function actually works on our toy problem.
+```{r}
+set.seed(10) # for consistency
+N = 50
+phi = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], x[[2]]) - 0.5)}
+d = 2
+s = 1
+```
+
+We will sample 50 points on the manifold. We define phi as a function, which will go into inputs.
+
+Now, we first run codes with uniform priors.
+```{r}
+res_point1 = sol_mfd_points(N, phi, d, s, prior = "uniform")
+apply(res_point1, 1, phi) # are they on solution manifold?
+plot(res_points1, xlab = "mean", ylab = "sigma") # how they are distributed
+```
+
+We can observe that a difference in prior leads to different results.
+```{r}
+res_points = sol_mfd_points(N, phi, d, s, gamma = 0.1, prior = "gaussian", mean = c(0, 3), sigma = matrix(c(2, 1, 1, 3), 2, 2))
+head(res_points)
+apply(res_point1, 1, phi) # are they on solution manifold?
+plot(res_points, xlab = "mean", ylab = "sigma") # how they are distributed
+```
 
 [1]: <https://arxiv.org/abs/2002.05297> "Solution Manifold and Its Statistical Applications"
