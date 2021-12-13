@@ -10,7 +10,7 @@ sol_mfd_points(
   d,
   s,
   prior = "gaussian",
-  gamma = 0.01,
+  gamma = 0.005,
   Lambda = NULL,
   tol1 = 1e-07,
   tol2 = 1e-15,
@@ -48,6 +48,7 @@ final_points: mat\link{N, d}: N number of points in R^d, which are points in sol
 solution manifold points sampling
 }
 \examples{
+set.seed(10)
 N = 10
 phi = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], x[[2]]) - 0.5)}
 d = 2
@@ -55,4 +56,5 @@ s = 1
 res_points = sol_mfd_points(N, phi, d, s, prior = "uniform")
 head(res_points)
 phi(res_points[1, ]) # are they on solution manifold?
+plot(res_points, xlab = "mean", ylab = "sigma", type = 'o') # how they are distributed
 }

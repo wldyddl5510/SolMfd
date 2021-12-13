@@ -16,6 +16,7 @@
 #' @export
 #'
 #' @examples
+#' set.seed(10)
 #' N = 10
 #' phi = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], x[[2]]) - 0.5)}
 #' d = 2
@@ -23,6 +24,7 @@
 #' res_points = sol_mfd_points(N, phi, d, s, prior = "uniform")
 #' head(res_points)
 #' phi(res_points[1, ]) # are they on solution manifold?
+#' plot(res_points, xlab = "mean", ylab = "sigma", type = 'o') # how they are distributed
 sol_mfd_points = function(N, phi, d, s, prior = "gaussian", gamma = 0.005, Lambda = NULL, tol1 = 1e-07, tol2 = 1e-15, num_iter = 100000, ...) {
   # construct positive definite function
   # compatibility check
@@ -154,6 +156,7 @@ constraint_likelihood = function(nll, C, theta, s, alpha = 0.005, gamma = 0.005,
 #' @export
 #'
 #' @examples
+#' set.seed(10)
 #' k = get("dnorm", mode = 'function')
 #' N = 10
 #' phi = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], ) - 0.5)}
@@ -161,12 +164,12 @@ constraint_likelihood = function(nll, C, theta, s, alpha = 0.005, gamma = 0.005,
 #' s = 1
 #' prob_density = function(x, theta) {return(dnorm(x, mean = theta[[1]], sd = theta[[2]]))}
 #' n = 100
-#' set.seed(1)
 #' X = rnorm(n, 1.5, 3)
-#' post_density_solmfd(X, prob_density, N, phi, d, s, k, prior = "uniform")
+#' res_with_density = post_density_solmfd(X, prob_density, N, phi, d, s, k, prior = "uniform", gamma = 0.1, min = 0, max = 1)
+#' head(res_with_density)
 post_density_solmfd = function(X, prob_density, N, phi, d, s, k, h = 1, prior = "gaussian", gamma = 0.01, Lambda = NULL, tol1 = 1e-07, tol2 = 1e-15, num_iter = 100000, ...) {
   # obtain points
-  points = sol_mfd_points(N, phi, d, prior, s, gamma, Lambda, tol1, tol2, num_iter, ...)
+  points = sol_mfd_points(N, phi, d, s, prior, gamma, Lambda, tol1, tol2, num_iter, ...)
   # kernel
   dist_between_row = between_row_dist(points, points)
   normalized = dist_between_row / h
@@ -178,7 +181,7 @@ post_density_solmfd = function(X, prob_density, N, phi, d, s, k, h = 1, prior = 
   # prior setting
   # designate sampling function
   density_function = density_from_dist(d, prior, ...)
-  pi_z = density_from_dist(points)
+  pi_z = density_function(points)
   # conditioning X ftn for vectoization
   z_conditioning_x = function(z) { return(prob_density(X, z)) }
   pi_i = exp(log(pi_z) + colSums(log(apply(points, 1, z_conditioning_x))))

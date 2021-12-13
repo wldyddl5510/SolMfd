@@ -60,6 +60,7 @@ final_points: mat\link{N, d + 1}: N number of points in R^d+1, which are (R^d di
 solution manifold points sampling with Posterior density
 }
 \examples{
+set.seed(10)
 k = get("dnorm", mode = 'function')
 N = 10
 phi = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], ) - 0.5)}
@@ -67,7 +68,7 @@ d = 2
 s = 1
 prob_density = function(x, theta) {return(dnorm(x, mean = theta[[1]], sd = theta[[2]]))}
 n = 100
-set.seed(1)
 X = rnorm(n, 1.5, 3)
-post_density_solmfd(X, prob_density, N, phi, d, s, k, prior = "uniform")
+res_with_density = post_density_solmfd(X, prob_density, N, phi, d, s, k, prior = "uniform", gamma = 0.1, min = 0, max = 1)
+head(res_with_density)
 }

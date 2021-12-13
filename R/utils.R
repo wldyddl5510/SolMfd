@@ -1,7 +1,7 @@
 # create quadratic function from given phi and Lambda
 pd_function = function(phi, Lambda) {
   quadratic_f = function(x) {
-    return(crossprod(phi(x), Lambda %*% phi(x)))
+    return(as.numeric(crossprod(phi(x), Lambda %*% phi(x))))
   }
   return(quadratic_f)
 }
@@ -24,7 +24,7 @@ grad_of_f = function(f) {
 
 # measure distance between rows of two matrices.
 between_row_dist = function(X, M) {
-  mat_dist = outer(rowSums(X), rowSums(M^2), '+') - tcrossprod(X, 2 * M)
+  mat_dist = outer(rowSums(X^2), rowSums(M^2), '+') - tcrossprod(X, 2 * M)
   return(mat_dist)
 }
 
@@ -33,14 +33,14 @@ sampling_from_dist = function(d, prior, ...) {
   params = list(...)
   if(prior == "gaussian") {
     # set mu
-    if(exists('mu', params)) {
-      mu = params$mu
+    if(exists('mean', params)) {
+      mu = params$mean
       # compatibility check
-      if(length(mu) != d) {
-        stop("dimension of mu mismatches with d.")
+      if(length(mean) != d) {
+        stop("dimension of mean mismatches with d.")
       }
     } else{ # default
-      print("No mu declaration. Set to default 0.")
+      print("No mean declaration. Set to default 0.")
       mu = rep(0, d)
     }
     # set sigma
@@ -59,7 +59,7 @@ sampling_from_dist = function(d, prior, ...) {
     }
     # sampling function
     sampling_function = function(N) {
-      (mvtnorm::rmvnorm(N, mean = mu, sigma = sigma))
+      (mvtnorm::rmvnorm(N, mean = mean, sigma = sigma))
     }
   } else if (prior == "uniform") { # set parameter for uniform distribution
       # set lower
@@ -74,7 +74,7 @@ sampling_from_dist = function(d, prior, ...) {
       }
       # set upper
       if(exists('max', params)) {
-        upper = params$upper
+        upper = params$max
         if(!is.numeric(upper)) {
           stop("max must be numeric.")
         }
@@ -101,14 +101,14 @@ density_from_dist = function(d, prior, ...) {
   params = list(...)
   if(prior == "gaussian") {
     # set mu
-    if(exists('mu', params)) {
-      mu = params$mu
+    if(exists('mean', params)) {
+      mu = params$mean
       # compatibility check
       if(length(mu) != d) {
-        stop("dimension of mu mismatches with d.")
+        stop("dimension of mean mismatches with d.")
       }
     } else{ # default
-      print("No mu declaration. Set to default 0.")
+      print("No mean declaration. Set to default 0.")
       mu = rep(0, d)
     }
     # set sigma
@@ -125,9 +125,9 @@ density_from_dist = function(d, prior, ...) {
       print("No sigma declaration. Set to default identity matrix.")
       sigma = diag(d)
     }
-    # sampling function
+    # density function
     density_function = function(x) {
-      (mvtnorm::dmvnorm(x, mean = mu, sigma = sigma))
+      (mvtnorm::dmvnorm(x, mean = mean, sigma = sigma))
     }
   } else if (prior == "uniform") { # set parameter for uniform distribution
     # set lower
@@ -142,7 +142,7 @@ density_from_dist = function(d, prior, ...) {
     }
     # set upper
     if(exists('max', params)) {
-      upper = params$upper
+      upper = params$max
       if(!is.numeric(upper)) {
         stop("max must be numeric.")
       }
@@ -154,9 +154,10 @@ density_from_dist = function(d, prior, ...) {
     if(lower >= upper) {
       stop("min must be smaller than max.")
     }
-    # sampling function
+    # density function
     density_function = function(x) {
-      return(stats::dunif(x, min = lower, max = upper))
+      each_density = stats::dunif(x, min = lower, max = upper)
+      return(apply(each_density, 1, prod))
     }
   } else{
     stop("Not implemented yet. Please use gaussian or uniform as a prior.")
