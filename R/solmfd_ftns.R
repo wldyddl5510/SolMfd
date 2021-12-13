@@ -82,11 +82,11 @@ sol_mfd_points = function(N, phi, d, s, prior = "gaussian", gamma = 0.005, Lambd
 #' C = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], x[[2]]) - 0.5)}
 #' theta = runif(2, 1, 3)
 #' theta_updated = constraint_likelihood(nll, C, theta, 1)
-#' # compare between init and end points.
-#' C(theta_updated[1, ])
-#' C(theta_updated[41, ])
-#' nll(theta_updated[1, ])
-#' nll(theta_updated[41, ])
+#' # plot the convergences
+#' plot(x = seq(1, nrow(theta_updated)), apply(theta_updated, 1, C), xlab = "step", ylab = "constraint", type = 'o')
+#' plot(x = seq(1, nrow(theta_updated)), apply(theta_updated, 1, nll), xlab = "step", ylab = "nll", type = 'o')
+#' plot(theta_updated, xlab = "mean", ylab = "sigma", type = 'o')
+#' lines(theta_updated[seq(3, nrow(theta_updated), by = 2), ],  col = 'red')
 constraint_likelihood = function(nll, C, theta, s, alpha = 0.005, gamma = 0.005, Lambda = NULL, tol1 = 1e-07, tol2 = 1e-15, num_iter = 100000, num_iter2 = 20) {
   d = length(theta)
   # compatibility check

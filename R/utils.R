@@ -34,14 +34,14 @@ sampling_from_dist = function(d, prior, ...) {
   if(prior == "gaussian") {
     # set mu
     if(exists('mean', params)) {
-      mu = params$mean
+      mean = params$mean
       # compatibility check
       if(length(mean) != d) {
         stop("dimension of mean mismatches with d.")
       }
     } else{ # default
       print("No mean declaration. Set to default 0.")
-      mu = rep(0, d)
+      mean = rep(0, d)
     }
     # set sigma
     if(exists('sigma', params)) {
@@ -102,14 +102,14 @@ density_from_dist = function(d, prior, ...) {
   if(prior == "gaussian") {
     # set mu
     if(exists('mean', params)) {
-      mu = params$mean
+      mean = params$mean
       # compatibility check
-      if(length(mu) != d) {
+      if(length(mean) != d) {
         stop("dimension of mean mismatches with d.")
       }
     } else{ # default
       print("No mean declaration. Set to default 0.")
-      mu = rep(0, d)
+      mean = rep(0, d)
     }
     # set sigma
     if(exists('sigma', params)) {
