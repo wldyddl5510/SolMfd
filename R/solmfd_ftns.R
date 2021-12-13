@@ -6,13 +6,13 @@
 #' @param prior str: type of prior distribution. "Gaussian", "t" are currently provided
 #' @param s int: output dimension
 #' @param gamma double: parameter of gradient descent step size
-#' @param Lambda mat[s, s]: p.d. function. Identity by default
+#' @param Lambda mat (s * s): p.d. function. Identity by default
 #' @param tol1 double: convergence threshold for manifold convergence
 #' @param tol2 double: convergence threhold for gradient descent algorithm. Should be smaller than tol1
 #' @param num_iter int: if algorithm does not converge, it iterates for num_iter times.
 #' @param ... additional parameter for prior distribution if needed. If not provided, each distribution has its default
 #'
-#' @return final_points: mat[N, d]: N number of points in R^d, which are points in solution manifold.
+#' @return final_points: mat (N * d): N number of points in R^d, which are points in solution manifold.
 #' @export
 #'
 #' @examples
@@ -136,7 +136,7 @@ constraint_likelihood = function(nll, C, theta, s, alpha = 0.005, gamma = 0.005,
 
 #' solution manifold points sampling with Posterior density
 #'
-#' @param X matrix[n, m]. input data. n is sample number and m is dimension of data.
+#' @param X matrix: (n * m). input data. n is sample number and m is dimension of data.
 #' @param prob_density function: P(X, Z). It is in fact P(X|Z)
 #' @param N int: number of data to ptoduce in solution manifold
 #' @param phi function from R^d -> R^s
@@ -152,7 +152,7 @@ constraint_likelihood = function(nll, C, theta, s, alpha = 0.005, gamma = 0.005,
 #' @param num_iter number of maximum iteration
 #' @param ... parameters of prior
 #'
-#' @return final_points: mat[N, d + 1]: N number of points in R^d+1, which are (R^d dim vector = points in solution manifold, density)
+#' @return final_points: mat: N * (d + 1): N number of points in R^d+1, which are (R^d dim vector = points in solution manifold, density)
 #' @export
 #'
 #' @examples
