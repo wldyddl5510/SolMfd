@@ -23,7 +23,7 @@ post_density_solmfd(
 )
 }
 \arguments{
-\item{X}{matrix\link{n, m}. input data. n is sample number and m is dimension of data.}
+\item{X}{matrix: (n * m). input data. n is sample number and m is dimension of data.}
 
 \item{prob_density}{function: P(X, Z). It is in fact P(X|Z)}
 
@@ -54,7 +54,7 @@ post_density_solmfd(
 \item{...}{parameters of prior}
 }
 \value{
-final_points: mat\link{N, d + 1}: N number of points in R^d+1, which are (R^d dim vector = points in solution manifold, density)
+final_points: mat: N * (d + 1): N number of points in R^d+1, which are (R^d dim vector = points in solution manifold, density)
 }
 \description{
 solution manifold points sampling with Posterior density

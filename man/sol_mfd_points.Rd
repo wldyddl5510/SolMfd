@@ -31,7 +31,7 @@ sol_mfd_points(
 
 \item{gamma}{double: parameter of gradient descent step size}
 
-\item{Lambda}{mat\link{s, s}: p.d. function. Identity by default}
+\item{Lambda}{mat (s * s): p.d. function. Identity by default}
 
 \item{tol1}{double: convergence threshold for manifold convergence}
 
@@ -42,7 +42,7 @@ sol_mfd_points(
 \item{...}{additional parameter for prior distribution if needed. If not provided, each distribution has its default}
 }
 \value{
-final_points: mat\link{N, d}: N number of points in R^d, which are points in solution manifold.
+final_points: mat (N * d): N number of points in R^d, which are points in solution manifold.
 }
 \description{
 solution manifold points sampling
