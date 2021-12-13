@@ -19,3 +19,7 @@ Imports:
     matrixcalc,
     mvtnorm,
     rootSolve
+Suggests: 
+    rmarkdown,
+    knitr
+VignetteBuilder: knitr

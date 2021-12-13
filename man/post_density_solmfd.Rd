@@ -2,73 +2,38 @@
 % Please edit documentation in R/solmfd_ftns.R
 \name{post_density_solmfd}
 \alias{post_density_solmfd}
-\title{solution manifold points sampling with Posterior density}
+\title{Posterior density of solution manifold points}
 \usage{
-post_density_solmfd(
-  X,
-  prob_density,
-  N,
-  phi,
-  d,
-  s,
-  k,
-  h = 1,
-  prior = "gaussian",
-  gamma = 0.01,
-  Lambda = NULL,
-  tol1 = 1e-07,
-  tol2 = 1e-15,
-  num_iter = 1e+05,
-  ...
-)
+post_density_solmfd(X, prob_density, points, k, h = 1, prior = "gaussian", ...)
 }
 \arguments{
 \item{X}{matrix: (n * m). input data. n is sample number and m is dimension of data.}
 
 \item{prob_density}{function: P(X, Z). It is in fact P(X|Z)}
 
-\item{N}{int: number of data to ptoduce in solution manifold}
-
-\item{phi}{function from R^d -> R^s}
-
-\item{d}{int: input dimension}
-
-\item{s}{int: output dimension}
+\item{points}{matrix (N * d). point clouds on manifold.}
 
 \item{k}{function: kernel function}
 
-\item{h}{double: normalizing constant. used in kernel. default = 1}
+\item{h}{normalizing factor. Default = 1}
 
 \item{prior}{str: type of prior distribution. Extra argument ... will be passed to a distribution parameter}
-
-\item{gamma}{double: parameter of gradient descent step size}
-
-\item{Lambda}{positive definite function. Default identity}
-
-\item{tol1}{double: convergence threshold for manifold convergence}
-
-\item{tol2}{double: convergence threhold for gradient descent algorithm. Should be smaller than tol1}
-
-\item{num_iter}{number of maximum iteration}
 
 \item{...}{parameters of prior}
 }
 \value{
-final_points: mat: N * (d + 1): N number of points in R^d+1, which are (R^d dim vector = points in solution manifold, density)
+omega_i vec (N): density of each row in matrix: points
 }
 \description{
-solution manifold points sampling with Posterior density
+Posterior density of solution manifold points
 }
 \examples{
 set.seed(10)
 k = get("dnorm", mode = 'function')
-N = 10
-phi = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], ) - 0.5)}
-d = 2
-s = 1
 prob_density = function(x, theta) {return(dnorm(x, mean = theta[[1]], sd = theta[[2]]))}
 n = 100
 X = rnorm(n, 1.5, 3)
-res_with_density = post_density_solmfd(X, prob_density, N, phi, d, s, k, prior = "uniform", gamma = 0.1, min = 0, max = 1)
+points = sol_mfd_points(N, phi, d, s, prior = "uniform")
+res_with_density = post_density_solmfd(X, prob_density, points, k)
 head(res_with_density)
 }

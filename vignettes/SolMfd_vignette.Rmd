@@ -1,0 +1,41 @@
+---
+title: "Solution Manifold ALgorithm Guidelines"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Solution Manifold ALgorithm Guidelines}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Overview
+
+In this vignettes, I will introduce solution manifold algorithms suggested on [Yen-Chi Chen, 2020][1] with examples, and some guidelines when running the codes.
+
+## Introduction: Solution Manifold
+
+Before introducing what is a solution manifold, I will start with some motivations. Many problems in statistics tries optimization under some constraints. For example, A likelihood ratio test, one of the most widely known hypothesis tests, tries to maximize likelihood under our null hypothesis. However, solving optimization under constraints is not an easy problem, especially when our target function or constraints are intractable. In fact, even before optimizing, finding solutions for constraints is already difficult problem. 
+
+Solution manifold algorithm is an algorithm to find the solution of a given function. For the given function $\Phi: \mathbb{R}^d \rightarrow \mathbb{R}^s$, solution manifold algorithms enable us to find points in $\{ x \in \mathbb{R}^d \: |\: \Phi(x) = 0\}$. 
+
+## outlines
+
+This package aims to implement solution manifold based algorithms suggested on [Yen-Chi Chen, 2020][1]. There are three algorithms suggested. First algorithm is to find point clouds on the solution manifold, second algorithm is to solve constraint likelihood estimation, and the last is to calculate the posterior densities of points in solution manifold. Therefore, there are mainly three functions in this package, conducting each of them. I will go through each algorithm with examples throughout this vignettes. Lastly, I will mention some of guidelines to use this package, especially how to tuning the hyper parameters.
+
+Now, we will start with loading our library.
+
+```{r setup}
+library(SolMfd)
+```
+
+### Algorithm 1: Finding point clouds on solution manifold algorithm.
+
+The first algorithm is most fundamental one. We sample 
+
+[1]: <https://arxiv.org/abs/2002.05297> "Solution Manifold and Its Statistical Applications"

@@ -61,8 +61,10 @@ C = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], x[[2]]) - 0
 theta = runif(2, 1, 3)
 theta_updated = constraint_likelihood(nll, C, theta, 1)
 # plot the convergences
-plot(x = seq(1, nrow(theta_updated)), apply(theta_updated, 1, C), xlab = "step", ylab = "constraint", type = 'o')
-plot(x = seq(1, nrow(theta_updated)), apply(theta_updated, 1, nll), xlab = "step", ylab = "nll", type = 'o')
+const_val = apply(theta_updated, 1, C)
+plot(x = seq(1, nrow(theta_updated)), const_val, xlab = "step", ylab = "constraint", type = 'o')
+nll_val = apply(theta_updated, 1, nll)
+plot(x = seq(1, nrow(theta_updated)), nll_val, xlab = "step", ylab = "nll", type = 'o')
 plot(theta_updated, xlab = "mean", ylab = "sigma", type = 'o')
 lines(theta_updated[seq(3, nrow(theta_updated), by = 2), ],  col = 'red')
 }

@@ -2,3 +2,4 @@
 .Rproj
 .Rhistory
 tests.r
+inst/doc

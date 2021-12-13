@@ -83,8 +83,10 @@ sol_mfd_points = function(N, phi, d, s, prior = "gaussian", gamma = 0.005, Lambd
 #' theta = runif(2, 1, 3)
 #' theta_updated = constraint_likelihood(nll, C, theta, 1)
 #' # plot the convergences
-#' plot(x = seq(1, nrow(theta_updated)), apply(theta_updated, 1, C), xlab = "step", ylab = "constraint", type = 'o')
-#' plot(x = seq(1, nrow(theta_updated)), apply(theta_updated, 1, nll), xlab = "step", ylab = "nll", type = 'o')
+#' const_val = apply(theta_updated, 1, C)
+#' plot(x = seq(1, nrow(theta_updated)), const_val, xlab = "step", ylab = "constraint", type = 'o')
+#' nll_val = apply(theta_updated, 1, nll)
+#' plot(x = seq(1, nrow(theta_updated)), nll_val, xlab = "step", ylab = "nll", type = 'o')
 #' plot(theta_updated, xlab = "mean", ylab = "sigma", type = 'o')
 #' lines(theta_updated[seq(3, nrow(theta_updated), by = 2), ],  col = 'red')
 constraint_likelihood = function(nll, C, theta, s, alpha = 0.005, gamma = 0.005, Lambda = NULL, tol1 = 1e-07, tol2 = 1e-15, num_iter = 100000, num_iter2 = 20) {
@@ -134,42 +136,34 @@ constraint_likelihood = function(nll, C, theta, s, alpha = 0.005, gamma = 0.005,
   return(theta_traj[!rowSums(!is.finite(theta_traj)),])
 }
 
-#' solution manifold points sampling with Posterior density
+#' Posterior density of solution manifold points
 #'
 #' @param X matrix: (n * m). input data. n is sample number and m is dimension of data.
 #' @param prob_density function: P(X, Z). It is in fact P(X|Z)
-#' @param N int: number of data to ptoduce in solution manifold
-#' @param phi function from R^d -> R^s
-#' @param d int: input dimension
-#' @param s int: output dimension
+#' @param points matrix (N * d). point clouds on manifold.
 #' @param k function: kernel function
-#' @param h double: normalizing constant. used in kernel. default = 1
+#' @param h normalizing factor. Default = 1
 #' @param prior str: type of prior distribution. Extra argument ... will be passed to a distribution parameter
-#' @param gamma double: parameter of gradient descent step size
-#' @param Lambda positive definite function. Default identity
-#' @param tol1 double: convergence threshold for manifold convergence
-#' @param tol2 double: convergence threhold for gradient descent algorithm. Should be smaller than tol1
-#' @param num_iter number of maximum iteration
 #' @param ... parameters of prior
 #'
-#' @return final_points: mat: N * (d + 1): N number of points in R^d+1, which are (R^d dim vector = points in solution manifold, density)
+#' @return omega_i vec (N): density of each row in matrix: points
 #' @export
 #'
 #' @examples
 #' set.seed(10)
 #' k = get("dnorm", mode = 'function')
-#' N = 10
-#' phi = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], ) - 0.5)}
-#' d = 2
-#' s = 1
 #' prob_density = function(x, theta) {return(dnorm(x, mean = theta[[1]], sd = theta[[2]]))}
 #' n = 100
 #' X = rnorm(n, 1.5, 3)
-#' res_with_density = post_density_solmfd(X, prob_density, N, phi, d, s, k, prior = "uniform", gamma = 0.1, min = 0, max = 1)
+#' points = sol_mfd_points(N, phi, d, s, prior = "uniform")
+#' res_with_density = post_density_solmfd(X, prob_density, points, k)
 #' head(res_with_density)
-post_density_solmfd = function(X, prob_density, N, phi, d, s, k, h = 1, prior = "gaussian", gamma = 0.01, Lambda = NULL, tol1 = 1e-07, tol2 = 1e-15, num_iter = 100000, ...) {
-  # obtain points
-  points = sol_mfd_points(N, phi, d, s, prior, gamma, Lambda, tol1, tol2, num_iter, ...)
+post_density_solmfd = function(X, prob_density, points, k, h = 1, prior = "gaussian", ...) {
+  if(!is.matrix(points)) {
+    stop("data must be matrix.")
+  }
+  # input dim
+  d = ncol(points)
   # kernel
   dist_between_row = between_row_dist(points, points)
   normalized = dist_between_row / h
@@ -186,6 +180,6 @@ post_density_solmfd = function(X, prob_density, N, phi, d, s, k, h = 1, prior = 
   z_conditioning_x = function(z) { return(prob_density(X, z)) }
   pi_i = exp(log(pi_z) + colSums(log(apply(points, 1, z_conditioning_x))))
   omega_i = pi_i / rho_i
-  return(cbind(points, omega_i))
+  return(omega_i)
 }
 
