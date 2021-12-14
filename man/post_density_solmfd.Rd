@@ -22,7 +22,7 @@ post_density_solmfd(X, prob_density, points, k, h = 1, prior = "gaussian", ...)
 \item{...}{parameters of prior}
 }
 \value{
-omega_i vec (N): density of each row in matrix: points
+omega_i vec (N): density of each row in matrix: points's row.
 }
 \description{
 Posterior density of solution manifold points

@@ -7,8 +7,7 @@ Description: Solution manifold can generalize various statistical methodologies.
     This package aims to implement algorithms regarding a solution manifold. 
     This includes finding a point cloud on the solution manifold, as well as statistical applications of solution manifolds.
     To be specific, this package consists of sampling from solution manifold, assigning posterior density to solution manifold, and solving constraint likelihood problem which utilizes solution manifold algorithms.
-    Also, some axuliary functions to perform above functions are also defined, such as sampling from given distribution as well as gradient descent algorithm.
-    Lastly, additional statistical applications of solution manifold, such as integral estimation and density ridge, can be implemented in a later version if time permits.
+    In a later version, additional statistical applications of solution manifold, such as integral estimation and density ridge, can be implemented.
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2

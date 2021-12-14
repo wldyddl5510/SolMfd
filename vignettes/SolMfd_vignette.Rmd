@@ -30,7 +30,7 @@ This package aims to implement solution manifold based algorithms suggested on [
 
 Now, we start exploring the package. We will start with loading our library.
 
-```{r setup}
+```{r}
 library(SolMfd)
 ```
 

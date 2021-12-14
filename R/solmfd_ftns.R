@@ -66,7 +66,7 @@ sol_mfd_points = function(N, phi, d, s, prior = "gaussian", gamma = 0.005, Lambd
 #' @param num_iter maximum number of iterations for gradient descent.
 #' @param num_iter2 number of iteration for all processes.
 #'
-#' @return theta_traj: matrix containing trajactory of theta updates.
+#' @return theta_traj: matrix (num_iter2 * length(theta)) containing trajactory of theta updates. Last row is a final result.
 #' @export
 #'
 #' @examples
@@ -146,7 +146,7 @@ constraint_likelihood = function(nll, C, theta, s, alpha = 0.005, gamma = 0.005,
 #' @param prior str: type of prior distribution. Extra argument ... will be passed to a distribution parameter
 #' @param ... parameters of prior
 #'
-#' @return omega_i vec (N): density of each row in matrix: points
+#' @return omega_i vec (N): density of each row in matrix: points's row.
 #' @export
 #'
 #' @examples

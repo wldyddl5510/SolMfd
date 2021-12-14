@@ -42,7 +42,7 @@ constraint_likelihood(
 \item{num_iter2}{number of iteration for all processes.}
 }
 \value{
-theta_traj: matrix containing trajactory of theta updates.
+theta_traj: matrix (num_iter2 * length(theta)) containing trajactory of theta updates. Last row is a final result.
 }
 \description{
 solving constraint likelihood function using the solution manifold.

@@ -15,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Intended use of the package
 
-Solution manifold is a mathematical concept that can be applied to various statistical applications. This package aims to provide the useful functions to utilize solution manifold algorithms. This package tries to achieve two-fold goals. The first one is to provide functions that enables to sample points from the solution manifold. Basic sampling for given prior, and sampling data from posterior distribution on solution manifold belong to this part. The other goal is to solve statistical problems that uses solution manifold approaches. Constrained likelihood estimation corresponds to this part. More statistical applications, such as integral estimation or solving density ridge problems, could be implemented in a later version.
+Solution manifold is a mathematical concept that can be applied to various statistical applications. This package aims to provide the useful functions to utilize solution manifold algorithms. It is consists of three functions. First one is sampling points from the solution manifold (sol_mfd_points), second one is solving constraint likelihood estimation problem (constraint_likelihood), and the last one is calculating posterior density on solution manifold (post_density_solmfd). More statistical applications, such as integral estimation or solving density ridge problems, could be implemented in a later version.
 
 ## Installation Instructions
 
@@ -33,12 +33,53 @@ devtools::install_github("wldyddl5510/SolMfd")
 * Installing from CRAN (not implemented yet):
 
 ```{r, include = TRUE, eval = FALSE}
-install.packages("SolMfd")
+# install.packages("SolMfd")
 ```
 
-## What is left?
+## Examples
+```{r}
+library(SolMfd)
+set.seed(10) # for consistency
+N = 20
+# define a target function
+phi = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], x[[2]]) - 0.5)}
+d = 2
+s = 1
+# sampling points from sol_mfd
+# using gaussian prior
+res_point = sol_mfd_points(N, phi, d, s, gamma = 0.1, prior = "gaussian", mean = c(0, 3), sigma = matrix(c(1, 0.25, 0.25, 1), 2, 2))
+res_point_tmp = res_point
+# check close to 0
+head(apply(res_point_tmp, 1, phi)) # are they on solution manifold? 
+plot(res_point, xlab = "mean", ylab = "sigma") # how they are distributed
 
-The followings are needed to be completed before the end of semester: 1. Code completion, 2. implementation in C++, 3. Writing vignettes. Fist, many codes are in skeleton codes for now, and these need to be completed. During this process, additional auxiliary functions are might be needed. Second, Implementing algorithm in C++ is crucial, since a lot of for-loops will appear in the algorithms. Finally, writing vignettes with graphical examples, including plots proposed in the original paper, is the goal of this project. In addition, if time permits, I will 4. include more statistical applications using solution manifolds, such as integral estimation or density ridge problems. 5. For the tests, I am currently unsure whether there might be suitable tests since the algorithm is stochastic. However, after finish completing codes if implementing tests seem plausible, that should also be one of the goals of the project. 
+# constraint likelihood
+# num of samples
+n = 30
+# data distribution
+X = rnorm(n, mean = 1.5, sd = 3)
+# negative log likelihood
+nll = function(theta) {return(-sum(dnorm(X, theta[[1]], theta[[2]], log = TRUE)))}
+# constraint
+C = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], x[[2]]) - 0.5)}
+theta = runif(2, 1, 3)
+theta_updated = constraint_likelihood(nll, C, theta, 1)
+# plot the convergences
+const_val = apply(theta_updated, 1, C)
+plot(x = seq(1, nrow(theta_updated)), const_val, xlab = "step", ylab = "constraint", type = 'o')
+nll_val = apply(theta_updated, 1, nll)
+plot(x = seq(1, nrow(theta_updated)), nll_val, xlab = "step", ylab = "nll", type = 'o')
+plot(theta_updated, xlab = "mean", ylab = "sigma", type = 'o')
+lines(theta_updated[seq(3, nrow(theta_updated), by = 2), ],  col = 'red')
+
+# posterior density
+k = get("dnorm", mode = 'function')
+prob_density = function(x, theta) {return(dnorm(x, mean = theta[[1]], sd = theta[[2]]))}
+n = 30
+X = rnorm(n, 1.5, 3)
+res_with_density = post_density_solmfd(X, prob_density, res_point, k)
+res_with_density
+```
 
 ## Reference
 
