@@ -2,7 +2,7 @@
 % Please edit documentation in R/solmfd_ftns.R
 \name{constraint_likelihood}
 \alias{constraint_likelihood}
-\title{solving constraint likelihood function using the solution manifold.}
+\title{Title solving constraint likelihood function using the solution manifold.}
 \usage{
 constraint_likelihood(
   nll,
@@ -19,52 +19,47 @@ constraint_likelihood(
 )
 }
 \arguments{
-\item{nll}{function: negative log-likelihood given data X}
+\item{nll}{function: negative log-likelihood}
 
-\item{C}{function: constraint function}
+\item{C}{function: constraint}
 
-\item{theta}{vector: initial parameter}
+\item{theta}{vector: initial value to start}
 
-\item{s}{int: output dim of function C}
+\item{s}{int output dimension for C}
 
-\item{alpha}{gradient descent step for nll update}
+\item{alpha}{double gradient descent step for likelihood update}
 
-\item{gamma}{gradient descent step for solution manifold algorithm}
+\item{gamma}{double gradient descent step for manifold converging}
 
-\item{Lambda}{positive definite matrix for solution manifold algorithm. Default is identity}
+\item{Lambda}{matrix positive definite matrix}
 
-\item{tol1}{double: convergence threshold for manifold convergence}
+\item{tol1}{double tolerance for manifold convergence}
 
-\item{tol2}{double: convergence threhold for gradient descent algorithm. Should be smaller than tol1}
+\item{tol2}{double tolerance for gradient descents}
 
-\item{num_iter}{maximum number of iterations for gradient descent.}
+\item{num_iter}{maximum iteration for gradient descent}
 
-\item{num_iter2}{number of iteration for all processes.}
+\item{num_iter2}{maximum iteration for all process}
 }
 \value{
-theta_traj: matrix (num_iter2 * length(theta)) containing trajactory of theta updates. Last row is a final result.
+matrix (num_iter2 * length(theta)) each row is a trajactory of theta update. last row is final results
 }
 \description{
-solving constraint likelihood function using the solution manifold.
+Title solving constraint likelihood function using the solution manifold.
 }
 \examples{
-# init value
 set.seed(10)
-# num of samples
-n = 100
-# data distribution
+n = 100 # number of data
 X = rnorm(n, mean = 1.5, sd = 3)
-# negative log likelihood
 nll = function(theta) {return(-sum(dnorm(X, theta[[1]], theta[[2]], log = TRUE)))}
-# constraint
 C = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], x[[2]]) - 0.5)}
-theta = runif(2, 1, 3)
-theta_updated = constraint_likelihood(nll, C, theta, 1)
-# plot the convergences
-const_val = apply(theta_updated, 1, C)
+theta_updated = constraint_likelihood(nll, C, c(1, 2), 1)
+theta_updated[nrow(theta_updated), ] # final result
+theta_tmp = theta_updated
+const_val = apply(theta_tmp, 1, C) # constraint for each row for plot
 plot(x = seq(1, nrow(theta_updated)), const_val, xlab = "step", ylab = "constraint", type = 'o')
-nll_val = apply(theta_updated, 1, nll)
+theta_tmp = theta_updated
+nll_val = apply(theta_tmp, 1, nll) # nll for each row for plot
 plot(x = seq(1, nrow(theta_updated)), nll_val, xlab = "step", ylab = "nll", type = 'o')
-plot(theta_updated, xlab = "mean", ylab = "sigma", type = 'o')
-lines(theta_updated[seq(3, nrow(theta_updated), by = 2), ],  col = 'red')
+plot(theta_updated, xlab = "mean", ylab = "sd", type = 'o')
 }

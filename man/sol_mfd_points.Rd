@@ -2,7 +2,7 @@
 % Please edit documentation in R/solmfd_ftns.R
 \name{sol_mfd_points}
 \alias{sol_mfd_points}
-\title{solution manifold points sampling}
+\title{Title Solution manifold sampling}
 \usage{
 sol_mfd_points(
   N,
@@ -19,33 +19,33 @@ sol_mfd_points(
 )
 }
 \arguments{
-\item{N}{int: number of output data}
+\item{N}{int number of points to obtain}
 
-\item{phi}{target function: R^d -> R^s}
+\item{phi}{function target function.}
 
-\item{d}{int: input dimension}
+\item{d}{int dim of input of phi}
 
-\item{s}{int: output dimension}
+\item{s}{int dim of output of phi}
 
-\item{prior}{str: type of prior distribution. "Gaussian", "t" are currently provided}
+\item{prior}{str initial point prior. "gaussian" or "uniform"}
 
-\item{gamma}{double: parameter of gradient descent step size}
+\item{gamma}{double gradient descent update step}
 
-\item{Lambda}{mat (s * s): p.d. function. Identity by default}
+\item{Lambda}{matrix (s * s) positivie definite matrix.}
 
-\item{tol1}{double: convergence threshold for manifold convergence}
+\item{tol1}{double tolerance for manifold convergence}
 
-\item{tol2}{double: convergence threhold for gradient descent algorithm. Should be smaller than tol1}
+\item{tol2}{double tolerance for gradient descent algorithm}
 
-\item{num_iter}{int: if algorithm does not converge, it iterates for num_iter times.}
+\item{num_iter}{maximum number of iteration}
 
-\item{...}{additional parameter for prior distribution if needed. If not provided, each distribution has its default}
+\item{...}{parameter for prior distributions}
 }
 \value{
-final_points: mat (N * d): N number of points in R^d, which are points in solution manifold.
+matrix (n * d). Each row is one point in R^d
 }
 \description{
-solution manifold points sampling
+Title Solution manifold sampling
 }
 \examples{
 set.seed(10)
@@ -54,7 +54,6 @@ phi = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], x[[2]]) -
 d = 2
 s = 1
 res_points = sol_mfd_points(N, phi, d, s, prior = "uniform")
-head(res_points)
-phi(res_points[1, ]) # are they on solution manifold?
-plot(res_points, xlab = "mean", ylab = "sigma", type = 'o') # how they are distributed
+phi(res_points[1, ]) # check == 0 for one data
+plot(res_points, xlab = "mean", ylab = "sigma", type = 'o')
 }

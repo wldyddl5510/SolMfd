@@ -1,30 +1,28 @@
-#' solution manifold points sampling
+#' Title Solution manifold sampling
 #'
-#' @param N int: number of output data
-#' @param phi target function: R^d -> R^s
-#' @param d int: input dimension
-#' @param prior str: type of prior distribution. "Gaussian", "t" are currently provided
-#' @param s int: output dimension
-#' @param gamma double: parameter of gradient descent step size
-#' @param Lambda mat (s * s): p.d. function. Identity by default
-#' @param tol1 double: convergence threshold for manifold convergence
-#' @param tol2 double: convergence threhold for gradient descent algorithm. Should be smaller than tol1
-#' @param num_iter int: if algorithm does not converge, it iterates for num_iter times.
-#' @param ... additional parameter for prior distribution if needed. If not provided, each distribution has its default
+#' @param N int number of points to obtain
+#' @param phi function target function.
+#' @param d int dim of input of phi
+#' @param s int dim of output of phi
+#' @param prior str initial point prior. "gaussian" or "uniform"
+#' @param gamma double gradient descent update step
+#' @param Lambda matrix (s * s) positivie definite matrix.
+#' @param tol1 double tolerance for manifold convergence
+#' @param tol2 double tolerance for gradient descent algorithm
+#' @param num_iter maximum number of iteration
+#' @param ... parameter for prior distributions
 #'
-#' @return final_points: mat (N * d): N number of points in R^d, which are points in solution manifold.
+#' @return matrix (n * d). Each row is one point in R^d
 #' @export
 #'
-#' @examples
-#' set.seed(10)
+#' @examples set.seed(10)
 #' N = 10
 #' phi = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], x[[2]]) - 0.5)}
 #' d = 2
 #' s = 1
 #' res_points = sol_mfd_points(N, phi, d, s, prior = "uniform")
-#' head(res_points)
-#' phi(res_points[1, ]) # are they on solution manifold?
-#' plot(res_points, xlab = "mean", ylab = "sigma", type = 'o') # how they are distributed
+#' phi(res_points[1, ]) # check == 0 for one data
+#' plot(res_points, xlab = "mean", ylab = "sigma", type = 'o')
 sol_mfd_points = function(N, phi, d, s, prior = "gaussian", gamma = 0.005, Lambda = NULL, tol1 = 1e-07, tol2 = 1e-15, num_iter = 100000, ...) {
   # construct positive definite function
   # compatibility check
@@ -50,45 +48,37 @@ sol_mfd_points = function(N, phi, d, s, prior = "gaussian", gamma = 0.005, Lambd
   return(final_points)
 }
 
-
-
-#' solving constraint likelihood function using the solution manifold.
+#' Title solving constraint likelihood function using the solution manifold.
 #'
-#' @param nll function: negative log-likelihood given data X
-#' @param C function: constraint function
-#' @param theta vector: initial parameter
-#' @param s int: output dim of function C
-#' @param alpha gradient descent step for nll update
-#' @param gamma gradient descent step for solution manifold algorithm
-#' @param Lambda positive definite matrix for solution manifold algorithm. Default is identity
-#' @param tol1 double: convergence threshold for manifold convergence
-#' @param tol2 double: convergence threhold for gradient descent algorithm. Should be smaller than tol1
-#' @param num_iter maximum number of iterations for gradient descent.
-#' @param num_iter2 number of iteration for all processes.
+#' @param nll function: negative log-likelihood
+#' @param C function: constraint
+#' @param theta vector: initial value to start
+#' @param s int output dimension for C
+#' @param alpha double gradient descent step for likelihood update
+#' @param gamma double gradient descent step for manifold converging
+#' @param Lambda matrix positive definite matrix
+#' @param tol1 double tolerance for manifold convergence
+#' @param tol2 double tolerance for gradient descents
+#' @param num_iter maximum iteration for gradient descent
+#' @param num_iter2 maximum iteration for all process
 #'
-#' @return theta_traj: matrix (num_iter2 * length(theta)) containing trajactory of theta updates. Last row is a final result.
+#' @return matrix (num_iter2 * length(theta)) each row is a trajactory of theta update. last row is final results
 #' @export
 #'
-#' @examples
-#' # init value
-#' set.seed(10)
-#' # num of samples
-#' n = 100
-#' # data distribution
+#' @examples set.seed(10)
+#' n = 100 # number of data
 #' X = rnorm(n, mean = 1.5, sd = 3)
-#' # negative log likelihood
 #' nll = function(theta) {return(-sum(dnorm(X, theta[[1]], theta[[2]], log = TRUE)))}
-#' # constraint
 #' C = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], x[[2]]) - 0.5)}
-#' theta = runif(2, 1, 3)
-#' theta_updated = constraint_likelihood(nll, C, theta, 1)
-#' # plot the convergences
-#' const_val = apply(theta_updated, 1, C)
+#' theta_updated = constraint_likelihood(nll, C, c(1, 2), 1)
+#' theta_updated[nrow(theta_updated), ] # final result
+#' theta_tmp = theta_updated
+#' const_val = apply(theta_tmp, 1, C) # constraint for each row for plot
 #' plot(x = seq(1, nrow(theta_updated)), const_val, xlab = "step", ylab = "constraint", type = 'o')
-#' nll_val = apply(theta_updated, 1, nll)
+#' theta_tmp = theta_updated
+#' nll_val = apply(theta_tmp, 1, nll) # nll for each row for plot
 #' plot(x = seq(1, nrow(theta_updated)), nll_val, xlab = "step", ylab = "nll", type = 'o')
-#' plot(theta_updated, xlab = "mean", ylab = "sigma", type = 'o')
-#' lines(theta_updated[seq(3, nrow(theta_updated), by = 2), ],  col = 'red')
+#' plot(theta_updated, xlab = "mean", ylab = "sd", type = 'o')
 constraint_likelihood = function(nll, C, theta, s, alpha = 0.005, gamma = 0.005, Lambda = NULL, tol1 = 1e-07, tol2 = 1e-15, num_iter = 100000, num_iter2 = 20) {
   d = length(theta)
   # compatibility check
@@ -136,25 +126,28 @@ constraint_likelihood = function(nll, C, theta, s, alpha = 0.005, gamma = 0.005,
   return(theta_traj[!rowSums(!is.finite(theta_traj)),])
 }
 
-#' Posterior density of solution manifold points
+#' Title Posterior density of solution manifold points
 #'
-#' @param X matrix: (n * m). input data. n is sample number and m is dimension of data.
-#' @param prob_density function: P(X, Z). It is in fact P(X|Z)
-#' @param points matrix (N * d). point clouds on manifold.
-#' @param k function: kernel function
-#' @param h normalizing factor. Default = 1
-#' @param prior str: type of prior distribution. Extra argument ... will be passed to a distribution parameter
-#' @param ... parameters of prior
+#' @param X matrix(n*m) input data with n samples in m dimension
+#' @param prob_density function of data and parameters
+#' @param points matrix (N * d) points obtained in solution manifold. N samples in d dim
+#' @param k function kernel function.
+#' @param h double normalizer. default = 1
+#' @param prior str prior distribution. either "gaussian" or "uniform"/
+#' @param ... additional parameter for prior
 #'
-#' @return omega_i vec (N): density of each row in matrix: points's row.
+#' @return vector (N) vector(i) is density of ith row of points
 #' @export
 #'
-#' @examples
-#' set.seed(10)
+#' @examples set.seed(10)
 #' k = get("dnorm", mode = 'function')
 #' prob_density = function(x, theta) {return(dnorm(x, mean = theta[[1]], sd = theta[[2]]))}
 #' n = 100
 #' X = rnorm(n, 1.5, 3)
+#' s = 1
+#' N = 10
+#' d = 2
+#' phi = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], x[[2]]) - 0.5)}
 #' points = sol_mfd_points(N, phi, d, s, prior = "uniform")
 #' res_with_density = post_density_solmfd(X, prob_density, points, k)
 #' head(res_with_density)

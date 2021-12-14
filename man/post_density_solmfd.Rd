@@ -2,30 +2,30 @@
 % Please edit documentation in R/solmfd_ftns.R
 \name{post_density_solmfd}
 \alias{post_density_solmfd}
-\title{Posterior density of solution manifold points}
+\title{Title Posterior density of solution manifold points}
 \usage{
 post_density_solmfd(X, prob_density, points, k, h = 1, prior = "gaussian", ...)
 }
 \arguments{
-\item{X}{matrix: (n * m). input data. n is sample number and m is dimension of data.}
+\item{X}{matrix(n*m) input data with n samples in m dimension}
 
-\item{prob_density}{function: P(X, Z). It is in fact P(X|Z)}
+\item{prob_density}{function of data and parameters}
 
-\item{points}{matrix (N * d). point clouds on manifold.}
+\item{points}{matrix (N * d) points obtained in solution manifold. N samples in d dim}
 
-\item{k}{function: kernel function}
+\item{k}{function kernel function.}
 
-\item{h}{normalizing factor. Default = 1}
+\item{h}{double normalizer. default = 1}
 
-\item{prior}{str: type of prior distribution. Extra argument ... will be passed to a distribution parameter}
+\item{prior}{str prior distribution. either "gaussian" or "uniform"/}
 
-\item{...}{parameters of prior}
+\item{...}{additional parameter for prior}
 }
 \value{
-omega_i vec (N): density of each row in matrix: points's row.
+vector (N) vector(i) is density of ith row of points
 }
 \description{
-Posterior density of solution manifold points
+Title Posterior density of solution manifold points
 }
 \examples{
 set.seed(10)
@@ -33,6 +33,10 @@ k = get("dnorm", mode = 'function')
 prob_density = function(x, theta) {return(dnorm(x, mean = theta[[1]], sd = theta[[2]]))}
 n = 100
 X = rnorm(n, 1.5, 3)
+s = 1
+N = 10
+d = 2
+phi = function(x) {return(pnorm(2, x[[1]], x[[2]]) - pnorm(-5, x[[1]], x[[2]]) - 0.5)}
 points = sol_mfd_points(N, phi, d, s, prior = "uniform")
 res_with_density = post_density_solmfd(X, prob_density, points, k)
 head(res_with_density)
