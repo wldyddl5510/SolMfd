@@ -40,10 +40,15 @@ Throughout this vignettes, I will use a toy problem for those algorithms. This t
 
 ### Algorithm 1: Finding point clouds on solution manifold algorithm.
 
-The first algorithm is most fundamental one. We sample point clouds on the solution manifold for given points and priors. 
-N stands for number of points we want to gather. Phi is a target function. d is a dimension of input, and s is a dimension of output. Those are required inputs for the algorithm.
+The first algorithm is most fundamental one. We sample point clouds on the solution manifold for given points and priors. The main approach of this algorithm is to start with random point and perform gradient descent, targeting our target function to be 0. However, since target function may not be 1-dim (although it is in our toy example), we instead optimize quadratic form of our target function. 
+
+For the inputs, N stands for number of points we want to gather. Phi is a target function. d is a dimension of input, and s is a dimension of output. Those are required inputs for the algorithm.
 There are some hyperparameters on this algorithm. Prior is sampling distribution for initial starting points. we also allows additional argument for priors. gamma is a update parameter for gradient descent algorithm, smaller gamma enables fine tunning, but we need more number of iteration to converge. Lambda is a positive-definite matrix to form our objective function. tol1 and tol2 stands for tolerances rate. tol1 is used to verify whether the point is in manifold, and tol2 is convergence of gradient descent. We recommend tol1 > tol2. Lastly, num_iter is number of maximum possible iterations. 
+
+For the output, it will return $\mathbb{R}^{N \times d}$ matrix. Each row will be the data point.
+
 Now, we see how the function actually works on our toy problem.
+
 ```{r}
 set.seed(10) # for consistency
 N = 50
@@ -56,17 +61,158 @@ We will sample 50 points on the manifold. We define phi as a function, which wil
 
 Now, we first run codes with uniform priors.
 ```{r}
-res_point1 = sol_mfd_points(N, phi, d, s, prior = "uniform")
-apply(res_point1, 1, phi) # are they on solution manifold?
-plot(res_points1, xlab = "mean", ylab = "sigma") # how they are distributed
+res_point1 = sol_mfd_points(N, phi, d, s, prior = "uniform", gamma = 0.01, min = 0, max = 3)
+res_point_tmp = res_point1
+head(apply(res_point_tmp, 1, phi)) # are they on solution manifold?
+plot(res_point1, xlab = "mean", ylab = "sigma") # how they are distributed
 ```
 
-We can observe that a difference in prior leads to different results.
+We can see parameters forms a certain subspace in $\mathbb{R}^2$, which we can call it solution manifold.
+
+We can observe that changing prior to gaussian distribution leads to different results.
+
 ```{r}
-res_points = sol_mfd_points(N, phi, d, s, gamma = 0.1, prior = "gaussian", mean = c(0, 3), sigma = matrix(c(2, 1, 1, 3), 2, 2))
-head(res_points)
-apply(res_point1, 1, phi) # are they on solution manifold?
-plot(res_points, xlab = "mean", ylab = "sigma") # how they are distributed
+res_point2 = sol_mfd_points(N, phi, d, s, gamma = 0.1, prior = "gaussian", mean = c(0, 3), sigma = matrix(c(1, 0.25, 0.25, 1), 2, 2))
+res_point_tmp = res_point2
+head(apply(res_point_tmp, 1, phi)) # are they on solution manifold?
+plot(res_point2, xlab = "mean", ylab = "sigma") # how they are distributed
 ```
+
+By changing prior to gaussian, we can see its domain (Compare X-axis with previous one) got much more wider. It is since gaussian prior enables us to explore more wide region than uniform. It also forms some kind of subspace, which we can conclude that those subspace will be likely the solution manifold.
+
+### Algorithm 2: Constraint likelihood estimation.
+
+Now, we will solve likelihood estimation with above constraint. This is conducted by repeating ascending likelihood (likelihood maximization), and descending to manifold (under constraint). By iteratively conducting this we can obtain points that both maximize gradient and satisfy constraints. When we have $\nabla \mathcal{l} \in \mathcal{R}(\Phi)$, it means that we are in extreme point, so this should be our stopping criterion. I implemented this by checking $Projection_{\Phi}(\nabla l) = \nabla l$. However, in practice I have found out that actually getting this condition requires very fine tuning of hyperparameter, and in many cases we would just have to iterate until number of iteration reaches.
+
+For likelihood estimation, we input the followings. We input negative log-likelihood function nll, constraint function C, initial point theta, output dimension s as input.
+Hyperparameters for this algorithm include alpha: gradient descent step for likelihood, gamma: gradient descent step for manifold, tol1 and tol2 be the same with previous example. In this function, we have two iterations, which is iterating ascending likelihood and descending manifold, so we have two num_of_iter, each setting maximum number of iteration for each step. num_iter1 controls gradient descent iterations, and num_iter2 controls overall process.
+
+It will return $\mathbb{R}^{iteration \times d}$, a trajactory of theta. The last row will be our final answer. 
+
+Now we conduct the function to our toy problem again. Before running the code, we need to specify the what is our negative log-likelihood. To specify our likelihood, we need data.
+
+```{r}
+n = 100
+X = rnorm(n, mean = 1.5, sd = 3) # data for likelihood
+```
+
+Now, we construct our likelihood. Note that since we sampled from $\mu = 1.5$ and $\sigma = 3$, likelihood should be maximized around that point.
+
+``` {r}
+nll = function(theta) {return(-sum(dnorm(X, theta[[1]], theta[[2]], log = TRUE)))}
+```
+
+Now, we will use our previous phi as our constraint. Now we sample $\theta$ randomly, and perform constraint likelihood optimization. 
+
+```{r}
+theta = runif(2, 0, 3)
+theta_updated = constraint_likelihood(nll, phi, theta, 1, num_iter = 1e+07, num_iter2 = 25)
+```
+
+We first check the final theta, and see whether it is close to true theta ($\mu = 1.5$ and $\sigma = 3$).
+
+```{r}
+theta_updated[1, ]
+theta_updated[nrow(theta_updated), ]
+```
+We can check that at first it moved in a direction from initial to true parameter. For those who think the final result is not close enough from the true parameter, note that we have constraint. Later results will show that this results indeed approximated true parameter under constraint. 
+
+We plot the trajectories of theta. First, we see how constraints changes.
+
+```{r}
+theta_tmp = theta_updated
+const_val = apply(theta_tmp, 1, phi)
+plot(x = seq(1, nrow(theta_updated)), const_val, xlab = "step", ylab = "constraint", type = 'o')
+```
+
+We can check our constraint was not satisfied in our initial point, but we becomes close to 0 as we proceed. Moreover, we can check when conducting likelihood ascending we actually deviate from the constraint, and then descend to the manifold.
+
+Now, we observe how negative log-likelihood changes.
+
+```{r}
+theta_tmp = theta_updated
+nll_val = apply(theta_tmp, 1, nll)
+plot(x = seq(1, nrow(theta_updated)), nll_val, xlab = "step", ylab = "nll", type = 'o')
+```
+We can also check that first we have very high negative log-likelihood, which means low likelihood. However, as we proceed, the algorithm tries to minimize it. However, due to constraint, the algorithm ociliate, tries to minimize negative log-likelihood, fit the constraint, minimize negative log-likelihood, fit the constraint, on and on. 
+
+We also can see dynamics of parameter changes in 2-dimension. 
+
+```{r}
+plot(theta_updated, xlab = "mean", ylab = "sigma", type = 'o')
+lines(theta_updated[seq(3, nrow(theta_updated), by = 2), ],  col = 'red')
+points(1.5, 3, col = "blue")
+```
+As it shows, the likelihood ascending tries to move closer to blue point, a true parameter ($\mu = 1.5$ and $\sigma = 3$). However, solution manifold, the red line, is quite far from the blue point. So it descend. 
+
+What if we update likelihood more fast, by changing gradient descent step? Let's see how it changes the dynamics. 
+
+```{r}
+theta_updated2 = constraint_likelihood(nll, phi, theta, 1, alpha = 0.05, num_iter = 1e+07, num_iter2 = 25)
+plot(theta_updated2, xlab = "mean", ylab = "sigma", type = 'o')
+lines(theta_updated2[seq(3, nrow(theta_updated2), by = 2), ],  col = 'red')
+points(1.5, 3, col = "blue")
+```
+
+We can see its update step becomes more drastic. It seems more clear that our algorithm wants to approach to the true parameter, the blue point, but constraint, the red line, prohibits doing it. 
+
+### Algorithm 3: Posterior density from points in Solution Manifold.
+
+The last function is to calculate the posterior density of solution manifold points. In Bayesian statistics, we often want to assign prior distribution to the point and approximate to posterior using likelihood. However, when our parameter space is in solution manifold, this becomes hard problem because we do not have closed form of solution manifold, so we cannot define prior and posterior on given support. 
+
+The paper theoretically proved that gradient descent updating function works as a push-forward function of the measure. What it means is that we can just define prior in total space. In our toy problem it total space will be any space that $\mu$ and $\sigma$ can lie without constraint, which will be $\mathbb{R} \times \mathbb{R}^{+}$. Then, if we use gradient descent algorithm, this prior will be "pushed" to the prior in the solution manifold. Therefore, instead of calculating density in solution manifold, we can calculate the density in total space and use its density as density in solution manifold. In other words, we can use prior distribution and posterior updates for solution manifold as usual, from total space.
+
+Therefore, this algorithm is just calculating posterior density on total space from given prior. This posterior density is not exact but only proportional, so instead of looking exact value we only need to focus on ratio between densities.
+
+Input of this algorithm consist of X: the data, prob_density: density function, and points: points on solution manifold. 
+Hyperparameter of this algorithm are k: kernel, h: normalizing constant, and prior: prior distribution.
+
+We first set the data and prob_density. We set data from $N(1.5, 3)$ and density as a normal distribution. 
+```{r}
+prob_density = function(x, theta) {return(dnorm(x, mean = theta[[1]], sd = theta[[2]]))}
+n = 100
+X = rnorm(n, 1.5, 3)
+```
+
+Now we set the kernel as a gaussian kernel, just as suggested in the original paper.
+
+```{r}
+k = get("dnorm", mode = 'function')
+```
+
+Now we will conduct this algorithm on 2 points obtained from algorithm 1
+```{r}
+res_with_density = post_density_solmfd(X, prob_density, res_point1, k)
+head(res_with_density)
+```
+Let's see whether it is correct. Since we used same $N(1.5, 3)$ as in algorithm 2, we will use nll defined on there.
+
+```{r}
+res_point_tmp = res_point1
+nll_for_res1 = apply(res_point_tmp, 1, nll)
+res_point1[which.min(nll_for_res1), ]
+res_point1[which.max(res_with_density), ]
+```
+
+You can check maximum density point are not too different with minimum negative log-likelihood point.
+
+```{r}
+res_with_density2 = post_density_solmfd(X, prob_density, res_point2, k)
+res_point_tmp = res_point2
+nll_for_res2 = apply(res_point_tmp, 1, nll)
+res_point2[which.min(nll_for_res2), ]
+res_point2[which.max(res_with_density2), ]
+```
+Also in other example, we can see it is not too far from true parameter. 
+
+## Guidelines when running a code
+
+Note that this algorithm is very sensitive to hyperparameters. If you want more detailed result, you will need to have smaller update steps for gradient descent (alpha and gamma), and smaller tolerance rate (tol1, tol2). However, by doing this, you will need more iteration steps to conduct. 
+
+One more thing I need to mention is that we have to be careful when setting a prior. For example, in our toy problem, we have $\sigma > 0$, so if we use gaussian prior, whose support is in all $\mathbb{R}$, make sure to tune the hyperparameter (mean and sigma) so that you do not obtain negative $\sigma$. I have not yet implemented checking that part, so it will just produce many NA's, and it might cause a problem. 
+
+## Conclusion
+
+We have so far explored the package SolMfd with a toy example. However, this algorithm is usable on much more complex settings too, such as when $s > 1$. Also, there are many other algorithms using solution manifold, such as integral calculation or density ridge problems. TYou can check [Yen-Chi Chen, 2020][1] for more details.
 
 [1]: <https://arxiv.org/abs/2002.05297> "Solution Manifold and Its Statistical Applications"
